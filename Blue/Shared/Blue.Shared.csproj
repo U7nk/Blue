@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="CityViewModelErrorLoc.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>CityViewModelErrorLoc.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="CityViewModelErrorLoc.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CityViewModelErrorLoc.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+</Project>

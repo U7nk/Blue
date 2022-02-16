@@ -1,0 +1,61 @@
+@using Blue.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.Extensions.Localization
+@using Blue.Client.Services
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<CityRowLoc> Loc
+@inject ICityService CityService
+
+<tr>
+    <th scope="row">@City.Id</th>
+    <td>@City.Name</td>
+    <td>@City.CitizensCount</td>
+    <td>@City.FoundationDate.ToShortDateString()</td>
+    <td><button class="btn btn-secondary" @onclick="ShowEditCityForm">@Loc["Edit"]</button></td>
+    <td><button class="btn btn-secondary" @onclick="DeleteCity">@Loc["Delete"]</button></td>
+</tr>
+
+@code {
+
+    private HubConnection hubConnection;
+
+    [CascadingParameter]
+    public IModalService Modal { get; set; }
+
+    [Parameter]
+    public CityViewModel City { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri(HubConst.CityJournal.Path))
+            .Build();
+
+        hubConnection.On<CityViewModel>(HubConst.CityJournal.UpdateCityAction, (cityModel) =>
+        {
+            if (City.Id != cityModel.Id)
+            {
+                return;
+            }
+            City = cityModel;
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private void ShowEditCityForm()
+    {
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(EditCityModal.City), City);
+
+        Modal.Show<EditCityModal>(Loc["EditCity"], parameters);
+    }
+
+    private async Task DeleteCity()
+    {
+        await CityService.DeleteCityById(City.Id);
+        await hubConnection.SendAsync(HubConst.CityJournal.DeleteCityAction, City);
+    }
+
+}

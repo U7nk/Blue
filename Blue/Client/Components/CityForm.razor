@@ -1,0 +1,43 @@
+@using Microsoft.AspNetCore.Components
+@using Blue.Client.Services
+@using Blue.Shared
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<CityFormLoc> Loc
+
+<EditForm Model="@City" OnValidSubmit="OnSubmit">
+<DataAnnotationsValidator />
+<div class="form-group">
+    <label>@Loc["Name"]
+        <InputText @bind-Value="@City.Name"/>
+    </label>
+    <ValidationMessage For="@(() => City.Name)" />
+</div>
+
+<div class="form-group">
+    <label >@Loc["CitizensCount"]
+        <InputNumber @bind-Value="@City.CitizensCount"/>
+    </label>
+    <ValidationMessage For="@(() => City.CitizensCount)" />
+
+</div>
+
+<div class="form-group">
+    <label>@Loc["FoundationDate"]
+        <InputDate @bind-Value="@City.FoundationDate"/>
+    </label>
+</div>
+
+<button @onclick="OnCancel" class="btn btn-secondary">@Loc["Cancel"]</button>
+<button type="submit" class="btn btn-primary">@Loc["Submit"].Value</button>
+    
+</EditForm>
+
+@code {
+
+    [Parameter]
+    public Func<Task> OnSubmit { get; set; }
+    [Parameter]
+    public Func<Task> OnCancel { get; set; }
+    [Parameter]
+    public CityViewModel City { get; set; }
+}

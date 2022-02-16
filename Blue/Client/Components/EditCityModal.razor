@@ -1,0 +1,40 @@
+@using Blue.Shared
+@using Blue.Client.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager NavigationManager
+@inject ICityService CityService
+
+@if (City is null)
+{
+    <div>city is null</div>
+    return;
+}
+
+<CityForm City="City" OnSubmit="SaveCity" OnCancel="ModalInstance.CloseAsync" />
+
+@code {
+
+    [CascadingParameter]
+    private BlazoredModalInstance ModalInstance { get; set; }
+
+    [Parameter]
+    public CityViewModel City { get; set; }
+    
+    private HubConnection hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri(HubConst.CityJournal.Path))
+            .Build();
+        await hubConnection.StartAsync();
+    }
+    
+    private async Task SaveCity()
+    {
+        await CityService.UpdateCity(City);
+        await ModalInstance.CloseAsync(ModalResult.Ok(City));
+        await hubConnection.SendAsync(HubConst.CityJournal.UpdateCityAction, City);
+    }
+
+}

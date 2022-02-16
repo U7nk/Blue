@@ -1,0 +1,104 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Blue.Shared;
+@using Blue.Client.Components
+
+@using Blue.Client.Services
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using Microsoft.Extensions.Localization
+@using System.Globalization
+@inject NavigationManager NavigationManager
+@inject ICityService CityService
+@inject IStringLocalizer<IndexLoc> Loc
+@implements IAsyncDisposable
+
+<div class="row">
+    
+</div>
+<div>
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="float-left"><input type="text" @bind="@searchText"><button @onclick="StateHasChanged" class="btn btn-secondary">@Loc["Find"] </button></div>
+        </div>
+    </div>
+</div>
+<button class="btn btn-secondary" @onclick="CreateCity" disabled="@(!IsConnected)">@Loc["Create"]</button>
+@if (searchText is not "")
+{
+    <div class="text-center">
+        <h5>Результаты поиска @searchText</h5>
+    </div>
+}
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">@Loc["Identifier"]</th>
+      <th scope="col">@Loc["Name"]</th>
+      <th scope="col">@Loc["CitizensCount"]</th>
+      <th scope="col">@Loc["FoundationDate"]</th>
+      <th scope="col">@Loc["Edit"]</th>
+      <th scope="col">@Loc["Delete"]</th>
+    </tr>
+  </thead>
+  <tbody>
+@foreach (var city in SearchFilter(cities))
+{
+    <CityRow City="city"/>
+}
+    </tbody>
+  </table>
+
+<hr>
+
+@code
+{
+    private string searchText = "";
+    private HubConnection hubConnection;
+    private List<CityViewModel> cities = new List<CityViewModel>();
+    
+    [CascadingParameter] public IModalService Modal { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri(HubConst.CityJournal.Path))
+            .Build();
+        hubConnection.On<CityViewModel>(HubConst.CityJournal.AddCityAction, cityModel =>
+        {
+            cities.Add(cityModel);
+            StateHasChanged();
+        });
+        hubConnection.On<CityViewModel>(HubConst.CityJournal.DeleteCityAction, cityModel =>
+        {
+            cities.Remove(cityModel);
+            StateHasChanged();
+        });
+        await hubConnection.StartAsync();
+        cities = await CityService.GetAllCities();
+    }
+
+    private void CreateCity() => Modal.Show<CreateCityModal>(Loc["CreateCity"]);
+
+    private bool IsConnected =>
+        hubConnection.State == HubConnectionState.Connected;
+
+    private List<CityViewModel> SearchFilter(List<CityViewModel> cityModels)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            return cityModels;
+        }
+        return cityModels.Where(x => x.Id.ToString().Contains(searchText) ||
+                                     x.Name.Contains(searchText) ||
+                                     x.CitizensCount.ToString().Contains(searchText) ||
+                                     x.FoundationDate.ToShortDateString().Contains(searchText))
+            .ToList();
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
